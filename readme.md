@@ -4,11 +4,13 @@ This tool is a wrapper to [openai's text to speech api](https://api.openai.com/v
 
 ## Prerequisites
 
-- an AWS account
-- permissions for Lambda, API Gateway and S3
-- AWS CLI
-- AWS SAM CLI
-- Refer to the [AWS SAM Installation guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/prerequisites.html) for more details about
+-   an AWS account
+-   permissions for Lambda, API Gateway and S3
+-   AWS CLI
+-   AWS SAM CLI
+-   Refer to the [AWS SAM Installation guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/prerequisites.html) for more details about
+
+*   For local invocation, Docker is also required
 
 ## Infrastructure
 
@@ -30,25 +32,24 @@ API Gateway accepts a POST request with 3 parameters:
 
 `voice_type`: the voice to read the text in. Documentation about voices can be found [here](https://platform.openai.com/docs/guides/speech-to-text)
 
-API Gateway invokes a Lambda function that handles calling openai to generate a mp3 file.  
+API Gateway invokes a Lambda function that handles calling openai to generate a mp3 file.
 
 An example response:
 
 ```json
 {
-    "statusCode": 200, 
-    "body": 
-        {
-            "message": "Upload file succeeded", 
-            "file_url": "https://dev-bucket.s3.amazonaws.com/hello_echo.mp3?AWSAccessKeyId=AKIATVKDXKJZ6&Signature=bazFe6RVL4VcWBASzREzrUBZovk%3D&Expires=1701593603"
-        }
+    "statusCode": 200,
+    "body": {
+        "message": "Upload file succeeded",
+        "file_url": "https://dev-bucket.s3.amazonaws.com/hello_echo.mp3?AWSAccessKeyId=AKIATVKDXKJZ6&Signature=bazFe6RVL4VcWBASzREzrUBZovk%3D&Expires=1701593603"
+    }
 }
 ```
 
 ## Developing
 
-- When developing, run `sam build` to 'save' changes.
-- Run `sam local invoke -e events/event.json` to test events against changes
-- Note that the event json should be in the form
+-   When developing, run `sam build` to 'save' changes.
+-   Run `sam local invoke -e events/event.json` to test events against changes
+-   Note that the event json should be in the form
 
 To test the lambda locally against the event.json
