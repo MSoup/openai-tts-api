@@ -11,6 +11,7 @@ Globals:
     Timeout: 120
     Environment:
       Variables:
+        # FAKE KEY, use your own
         OPENAI_API_KEY: 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
     # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
     # LoggingConfig:
