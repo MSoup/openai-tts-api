@@ -1,0 +1,6 @@
+venv
+.DS_Store
+_playground.py
+
+.aws-sam
+text-to-voice-ai/audio_output/*

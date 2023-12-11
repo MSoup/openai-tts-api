@@ -1,0 +1,8 @@
+{
+  "body": 
+    {
+      "output_name": "hello_onyx", 
+      "text_to_read": "This is a test with onyx voice type.",
+      "voice_type": "onyx"
+    }
+}

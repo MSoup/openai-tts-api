@@ -1,0 +1,8 @@
+{
+  "body": 
+    {
+      "output_name": "hello_echo", 
+      "text_to_read": "This is a test with echo voice type.",
+      "voice_type": "echo"
+    }
+}
