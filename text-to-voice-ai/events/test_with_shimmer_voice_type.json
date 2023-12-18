@@ -1,8 +1,0 @@
-{
-  "body": 
-    {
-      "output_name": "hello_shimmer", 
-      "text_to_read": "This is a test with shimmer voice type.",
-      "voice_type": "shimmer"
-    }
-}

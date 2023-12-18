@@ -1,8 +1,0 @@
-{
-  "body": 
-    {
-      "output_name": "hello_nova", 
-      "text_to_read": "This is a test with nova voice type.",
-      "voice_type": "nova"
-    }
-}
