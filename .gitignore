@@ -5,7 +5,9 @@ _playground.py
 .aws-sam
 .terraform
 .vscode
-
+.terraform.lock.hcl
 env.json
+builds/
+terraform.tfstate.backup
 terraform.tfvars
 terraform.tfstate
