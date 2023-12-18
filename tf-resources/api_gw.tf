@@ -15,7 +15,7 @@ resource "aws_api_gateway_deployment" "deployment" {
     create_before_destroy = true
   }
 
-  depends_on = [ aws_api_gateway_method.post_method, aws_api_gateway_integration.integration ]
+  depends_on = [aws_api_gateway_method.post_method, aws_api_gateway_integration.integration]
 }
 
 # API Gateway Stage (for managing different environments)
