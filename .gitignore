@@ -1,6 +1,11 @@
 venv
 .DS_Store
 _playground.py
-
+.aws-sam-iacs
 .aws-sam
-text-to-voice-ai/audio_output/*
+.terraform
+.vscode
+
+env.json
+terraform.tfvars
+terraform.tfstate
