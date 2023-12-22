@@ -38,7 +38,7 @@ This project spins up an API Gateway with Lambda proxy integration and reveals a
 -   Signed URLs are generated only during the time that it is requested, which is immediately after the HTTP request
 
 ### Cautions
-- (Dec 2023) The API is not secured (as you do not need an authentication token to use it). *It is your responsibility* to add security layers to this infrastructure
+- (Dec 2023) The API is not secured (as you do not need an authentication token at the API Gateway level). *It is your responsibility* to add security layers to this infrastructure
 
 ### Demo
 
