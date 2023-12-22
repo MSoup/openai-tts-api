@@ -11,3 +11,4 @@ builds/
 terraform.tfstate.backup
 terraform.tfvars
 terraform.tfstate
+openai-layer.zip
