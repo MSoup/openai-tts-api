@@ -1,8 +1,8 @@
 # Text to Speech API
 
-This API is a wrapper to [openai's text to speech api](https://api.openai.com/v1/audio/speech).
+This API is a wrapper to [openai's text-to-speech API](https://api.openai.com/v1/audio/speech).
 
-Use this to expose your own API to dynamically generate audio clips, saved in your own S3 bucket.
+Use this to expose an API to dynamically generate audio clips, saved in your own S3 bucket.
 
 ## Background
 
@@ -15,6 +15,7 @@ This project spins up an API Gateway with Lambda proxy integration and reveals a
 -   [Text to Speech API](#text-to-speech-api)
     -   [Background](#background)
         -   [Features](#features)
+        -   [Cautions Before Use!](#cautions)
         -   [Demo](#demo)
     -   [Installation](#installation)
         -   [Prerequisites](#prerequisites)
@@ -32,9 +33,12 @@ This project spins up an API Gateway with Lambda proxy integration and reveals a
 -   Local development possible with AWS SAM
 -   Reproducible infrastructure through Terraform
 -   100% of AWS resources available in AWS free tier
--   1 audio file costs 1 cent for a 20-40 word input (requires openai api key)
+-   1 audio file costs 1 cent for a 20-40 word input (requires openai API key)
 -   S3 bucket objects are secure by default, objects not accessible without a signed URL
--   Signed URLs are generated only during the time that it is requested, which is immediately after the http request
+-   Signed URLs are generated only during the time that it is requested, which is immediately after the HTTP request
+
+### Cautions
+- (Dec 2023) The API is not secured (as you do not need an authentication token to use it). *It is your responsibility* to add security layers to this infrastructure
 
 ### Demo
 
@@ -80,7 +84,7 @@ terraform plan
 terraform apply
 ```
 
-`terraform apply` outputs a url similar to `https://ljdsfsd7.execute-api.us-west-2.amazonaws.com/dev/`
+`terraform apply` outputs a URL similar to `https://ljdsfsd7.execute-api.us-west-2.amazonaws.com/dev/`
 
 ## Usage
 
@@ -123,7 +127,7 @@ The deployed API Gateway accepts a POST request with 3 parameters:
 }
 ```
 
-Lambda routes the `<text_to_read>` to openai, retrieves the mp3 where the text is spoken in `<voice_type>`, stores it in an S3 bucket as `<output_name.mp3>`, and finally generating a signed URL to the audio file to which you may access for a 1 hour period.
+Lambda routes the `<text_to_read>` to openai, retrieves the mp3 where the text is spoken in `<voice_type>`, stores it in an S3 bucket as `<output_name.mp3>`, and finally generates a signed URL to the audio file to which you may access for 1 hour.
 
 ## Developing
 
