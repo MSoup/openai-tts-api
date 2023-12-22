@@ -9,6 +9,27 @@ S3_BUCKET_NAME = os.getenv("daven-dev-bucket")
 s3_client = boto3.client("s3")
 
 
+def generate_response(statusCode: int, message: str, extras: dict = {}):
+    # only response body will be shown through API gateway--the other response values are metadata
+    response_body = {"message": message, "success": statusCode == 200}
+
+    if extras:
+        for k, v in extras:
+            response_body[k] = v
+
+    response = {
+        "isBase64Encoded": False,
+        "statusCode": statusCode,
+        "headers": {},
+        "multiValueHeaders": {},
+        "body": "",
+    }
+
+    response["body"] = json.dumps(response_body)
+
+    return response
+
+
 def checkValidEnv(data):
     if S3_BUCKET_NAME is None:
         raise ValueError("S3 Bucket name doesn't exist. Check env variables")
@@ -18,49 +39,41 @@ def checkValidEnv(data):
     voice_type = data.get("voice_type")
 
     if any(val is None for val in [output_name, text_to_read, voice_type]):
-        raise KeyError("Request body requires a output_name and text_to_read")
+        raise KeyError("Include in request body output_name, text_to_read, voice_type")
 
 
 def lambda_handler(event, context):
     print(event)
     data = json.loads(event.get("body"))
 
-    checkValidEnv(data)
+    try:
+        checkValidEnv(data)
+    except ValueError as e:
+        return generate_response(422, str(e))
 
+    except KeyError as e:
+        return generate_response(400, str(e))
+
+    # three inputs should exist now
     output_name = data.get("output_name")
     text_to_read = data.get("text_to_read")
     voice_type = data.get("voice_type")
 
-    binary_audio = create_audio(text_to_read, voice_type)
+    try:
+        binary_audio = create_audio(text_to_read, voice_type)
+    except ValueError as e:
+        return generate_response(422, str(e))
+
     file_name = f"{output_name}.mp3"
-
-    response = {
-        "isBase64Encoded": False,
-        "statusCode": 200,
-        "headers": {},
-        "multiValueHeaders": {},
-        "body": "",
-    }
-
-    response_body = {
-        "message": "",
-    }
 
     if not upload_to_s3(
         file=binary_audio, bucket=S3_BUCKET_NAME, object_name=file_name
     ):
-        response["statusCode"] = 500
-        response_body["message"] = "Unable to upload to S3. Check permissions"
-        response["body"] = json.dumps(response_body)
-        return response
+        return generate_response(500, "Unable to upload to S3, check permissions")
 
     s3_temp_url = get_signed_url(bucket_name=S3_BUCKET_NAME, object_name=file_name)
 
-    response_body["message"] = "Upload file succeeded"
-    response_body["file_url"] = s3_temp_url
-    response["body"] = json.dumps(response_body)
-
-    return response
+    return generate_response(200, "Upload file succeeded", {"file_url": s3_temp_url})
 
 
 def create_audio(text_to_read, voice_type="alloy"):
