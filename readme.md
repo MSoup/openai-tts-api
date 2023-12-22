@@ -6,7 +6,7 @@ Use this to expose an API to dynamically generate audio clips, saved in your own
 
 ## Background
 
-This project spins up an API Gateway with Lambda proxy integration and reveals an endpoint to which you may send `POST` requests to with some text you wish to get back as a text-to-speech audio file.
+This project spins up an API Gateway with Lambda proxy integration and reveals an endpoint to which you may send `POST` requests with some text you wish to get back as a text-to-speech audio file.
 
 ![infrastructure](/assets/infra.png)
 
@@ -53,6 +53,7 @@ This project spins up an API Gateway with Lambda proxy integration and reveals a
 -   [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 -   The [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) (local development)
 -   For local invocation, [Docker](https://docs.docker.com/engine/install/) is also required
+-   Note: This project was developed on Apple silicon, so relevant areas have arm64 architecture designated. Please change this as required. You may have to create a x86_64 openai layer if you wish to switch everything over to x86_64.
 
 ### Set AWS Secrets
 
