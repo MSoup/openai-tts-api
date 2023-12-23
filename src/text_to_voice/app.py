@@ -5,7 +5,10 @@ import boto3
 from openai import OpenAI
 from botocore.exceptions import ClientError
 
-S3_BUCKET_NAME = os.getenv("daven-dev-bucket")
+# Environment variables
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 s3_client = boto3.client("s3")
 
 
@@ -14,7 +17,7 @@ def generate_response(statusCode: int, message: str, extras: dict = {}):
     response_body = {"message": message, "success": statusCode == 200}
 
     if extras:
-        for k, v in extras:
+        for k, v in extras.items():
             response_body[k] = v
 
     response = {
@@ -31,8 +34,10 @@ def generate_response(statusCode: int, message: str, extras: dict = {}):
 
 
 def checkValidEnv(data):
-    if S3_BUCKET_NAME is None:
-        raise ValueError("S3 Bucket name doesn't exist. Check env variables")
+    if not S3_BUCKET_NAME:
+        raise ValueError(f"S3 Bucket name: ${S3_BUCKET_NAME} doesn't exist.")
+    if not OPENAI_API_KEY:
+        raise EnvironmentError()
 
     output_name = data.get("output_name")
     text_to_read = data.get("text_to_read")
@@ -50,7 +55,6 @@ def lambda_handler(event, context):
         checkValidEnv(data)
     except ValueError as e:
         return generate_response(422, str(e))
-
     except KeyError as e:
         return generate_response(400, str(e))
 
@@ -73,7 +77,9 @@ def lambda_handler(event, context):
 
     s3_temp_url = get_signed_url(bucket_name=S3_BUCKET_NAME, object_name=file_name)
 
-    return generate_response(200, "Upload file succeeded", {"file_url": s3_temp_url})
+    return generate_response(
+        200, "Upload file succeeded", extras={"file_url": s3_temp_url}
+    )
 
 
 def create_audio(text_to_read, voice_type="alloy"):

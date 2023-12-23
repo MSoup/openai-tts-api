@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    text-to-voice-ai
+
+    Sample SAM Template for text-to-voice-ai
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+    Function:
+        Timeout: 120
+Resources:
+    TTSFunction:
+        Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+        Properties:
+            CodeUri: text_to_voice/
+            Layers:
+                - !Ref MyLambdaLayer
+            Handler: app.lambda_handler
+            Runtime: python3.9
+            Architectures: ["arm64"]
+            Environment:
+                Variables:
+                    S3_BUCKET_NAME: daven-dev-bucket
+                    OPENAI_API_KEY: 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
+            Events:
+                apigw:
+                    Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+                    Properties:
+                        Path: /tts
+                        Method: post
+    MyLambdaLayer:
+        Type: AWS::Serverless::LayerVersion
+        Properties:
+            LayerName: openai_layer
+            Description: Layer for openai
+            ContentUri: openai-layer.zip
+            CompatibleRuntimes:
+                - python3.9
+            CompatibleArchitectures:
+                - "arm64"
+    ApplicationResourceGroup:
+        Type: AWS::ResourceGroups::Group
+        Properties:
+            Name:
+                Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+            ResourceQuery:
+                Type: CLOUDFORMATION_STACK_1_0
+    ApplicationInsightsMonitoring:
+        Type: AWS::ApplicationInsights::Application
+        Properties:
+            ResourceGroupName:
+                Ref: ApplicationResourceGroup
+            AutoConfigurationEnabled: "true"
+Outputs:
+    # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+    # Find out more about other implicit resources you can reference within SAM
+    # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+    TTSApi:
+        Description: API Gateway endpoint URL for dev stage for Hello World function
+        Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/dev/tts/"
+    TTSFunction:
+        Description: TTS Lambda Function ARN
+        Value: !GetAtt TTSFunction.Arn
+    TTSFunctionIamRole:
+        Description: Implicit IAM Role created for Hello World function
+        Value: !GetAtt TTSFunctionRole.Arn
