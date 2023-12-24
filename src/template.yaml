@@ -15,21 +15,21 @@ Resources:
         Properties:
             CodeUri: text_to_voice/
             Layers:
-                - !Ref MyLambdaLayer
+                - !Ref openaiLayer
             Handler: app.lambda_handler
             Runtime: python3.9
             Architectures: ["arm64"]
             Environment:
                 Variables:
                     S3_BUCKET_NAME: daven-dev-bucket
-                    OPENAI_API_KEY: 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
+                    OPENAI_API_KEY: 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
             Events:
                 apigw:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
                     Properties:
                         Path: /tts
                         Method: post
-    MyLambdaLayer:
+    openaiLayer:
         Type: AWS::Serverless::LayerVersion
         Properties:
             LayerName: openai_layer
