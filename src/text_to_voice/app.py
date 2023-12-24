@@ -5,14 +5,42 @@ import boto3
 from openai import OpenAI
 from botocore.exceptions import ClientError
 
+
 # Environment variables
-S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-s3_client = boto3.client("s3")
+_LAMBDA_S3_RESOURCE = {
+    "resource": boto3.resource("s3"),
+    "bucket_name": os.getenv("S3_BUCKET_NAME"),
+    "client": boto3.client("s3"),
+}
+
+
+class LambdaS3Class:
+    """
+    AWS S3 Resource Class
+    """
+
+    def __init__(self, lambda_s3_resource):
+        """
+        Initialize an S3 Resource
+        """
+        self.resource = lambda_s3_resource["resource"]
+        self.client = lambda_s3_resource["client"]
+        self.bucket_name = lambda_s3_resource["bucket_name"]
+        self.bucket = self.resource.Bucket(self.bucket_name)
 
 
 def generate_response(statusCode: int, message: str, extras: dict = {}):
+    """
+    Helper to construct a response body
+
+    :param statusCode: int, 200 default
+    :param message: str
+    :param extras: dictionary of k,v to append to response body
+    :return: Http Response
+
+    """
     # only response body will be shown through API gateway--the other response values are metadata
     response_body = {"message": message, "success": statusCode == 200}
 
@@ -34,8 +62,6 @@ def generate_response(statusCode: int, message: str, extras: dict = {}):
 
 
 def checkValidEnv(data):
-    if not S3_BUCKET_NAME:
-        raise ValueError(f"S3 Bucket name: ${S3_BUCKET_NAME} doesn't exist.")
     if not OPENAI_API_KEY:
         raise EnvironmentError()
 
@@ -50,6 +76,7 @@ def checkValidEnv(data):
 def lambda_handler(event, context):
     print(event)
     data = json.loads(event.get("body"))
+    s3_class = LambdaS3Class(_LAMBDA_S3_RESOURCE)
 
     try:
         checkValidEnv(data)
@@ -70,12 +97,12 @@ def lambda_handler(event, context):
 
     file_name = f"{output_name}.mp3"
 
-    if not upload_to_s3(
-        file=binary_audio, bucket=S3_BUCKET_NAME, object_name=file_name
-    ):
+    try:
+        upload_to_s3(file=binary_audio, s3=s3_class, object_name=file_name)
+    except ClientError as e:
         return generate_response(500, "Unable to upload to S3, check permissions")
 
-    s3_temp_url = get_signed_url(bucket_name=S3_BUCKET_NAME, object_name=file_name)
+    s3_temp_url = get_signed_url(s3=s3_class, object_name=file_name)
 
     return generate_response(
         200, "Upload file succeeded", extras={"file_url": s3_temp_url}
@@ -97,24 +124,25 @@ def create_audio(text_to_read, voice_type="alloy"):
     return response.read()
 
 
-def upload_to_s3(file, bucket, object_name):
+def upload_to_s3(file: bytes, s3: LambdaS3Class, object_name: str):
     """Upload a file to an S3 bucket
 
     :param file: bytes
-    :param bucket: Bucket to upload to
+    :param s3: s3_resource_class
     :param object_name: S3 object name
-    :return: True if file was uploaded, else False
+    :return: S3.object
     """
     # Upload the file
 
-    response = s3_client.put_object(Body=file, Bucket=bucket, Key=object_name)
+    response = s3.bucket.put_object(
+        Key=object_name,
+        Body=file,
+    )
 
-    res = response["ResponseMetadata"]
-
-    return res["HTTPStatusCode"] == 200
+    return response
 
 
-def get_signed_url(bucket_name, object_name, expiration=3600):
+def get_signed_url(s3: LambdaS3Class, object_name, expiration=3600):
     """Generate a presigned URL to share an S3 object
 
     :param bucket_name: string
@@ -124,13 +152,12 @@ def get_signed_url(bucket_name, object_name, expiration=3600):
     """
 
     try:
-        response = s3_client.generate_presigned_url(
+        response = s3.client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": bucket_name, "Key": object_name},
+            Params={"Bucket": s3.bucket_name, "Key": object_name},
             ExpiresIn=expiration,
         )
     except ClientError as e:
         logging.error(e)
-        return None
     # The response contains the presigned URL
     return response
