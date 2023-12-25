@@ -31,52 +31,21 @@ class LambdaS3Class:
         self.bucket = self.resource.Bucket(self.bucket_name)
 
 
-def generate_response(statusCode: int, message: str, extras: dict = {}):
+class OpenAIClass:
     """
-    Helper to construct a response body
-
-    :param statusCode: int, 200 default
-    :param message: str
-    :param extras: dictionary of k,v to append to response body
-    :return: Http Response
-
+    OpenAI
     """
-    # only response body will be shown through API gateway--the other response values are metadata
-    response_body = {"message": message, "success": statusCode == 200}
 
-    if extras:
-        for k, v in extras.items():
-            response_body[k] = v
-
-    response = {
-        "isBase64Encoded": False,
-        "statusCode": statusCode,
-        "headers": {},
-        "multiValueHeaders": {},
-        "body": "",
-    }
-
-    response["body"] = json.dumps(response_body)
-
-    return response
-
-
-def checkValidEnv(data):
-    if not OPENAI_API_KEY:
-        raise EnvironmentError()
-
-    output_name = data.get("output_name")
-    text_to_read = data.get("text_to_read")
-    voice_type = data.get("voice_type")
-
-    if any(val is None for val in [output_name, text_to_read, voice_type]):
-        raise KeyError("Include in request body output_name, text_to_read, voice_type")
+    def __init__(self, openai_resource):
+        self.resource = openai_resource["resource"]
 
 
 def lambda_handler(event, context):
     print(event)
     data = json.loads(event.get("body"))
+    # Initialize class
     s3_class = LambdaS3Class(_LAMBDA_S3_RESOURCE)
+    openai_class = OpenAIClass({"resource": OpenAI})
 
     try:
         checkValidEnv(data)
@@ -91,7 +60,9 @@ def lambda_handler(event, context):
     voice_type = data.get("voice_type")
 
     try:
-        binary_audio = create_audio(text_to_read, voice_type)
+        binary_audio = create_audio(
+            API=openai_class, text_to_read=text_to_read, voice_type=voice_type
+        )
     except ValueError as e:
         return generate_response(422, str(e))
 
@@ -109,13 +80,13 @@ def lambda_handler(event, context):
     )
 
 
-def create_audio(text_to_read, voice_type="alloy"):
+def create_audio(API: OpenAIClass, text_to_read: str, voice_type: str = "alloy"):
     if voice_type not in ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]:
         raise ValueError(
             "Invalid voice_type. It must be one of ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']"
         )
 
-    client = OpenAI()
+    client = API.resource()
 
     response = client.audio.speech.create(
         model="tts-1", voice=voice_type, input=text_to_read
@@ -161,3 +132,45 @@ def get_signed_url(s3: LambdaS3Class, object_name, expiration=3600):
         logging.error(e)
     # The response contains the presigned URL
     return response
+
+
+def generate_response(statusCode: int, message: str, extras: dict = {}):
+    """
+    Helper to construct a response body
+
+    :param statusCode: int, 200 default
+    :param message: str
+    :param extras: dictionary of k,v to append to response body
+    :return: Http Response
+
+    """
+    # only response body will be shown through API gateway--the other response values are metadata
+    response_body = {"message": message, "success": statusCode == 200}
+
+    if extras:
+        for k, v in extras.items():
+            response_body[k] = v
+
+    response = {
+        "isBase64Encoded": False,
+        "statusCode": statusCode,
+        "headers": {},
+        "multiValueHeaders": {},
+        "body": "",
+    }
+
+    response["body"] = json.dumps(response_body)
+
+    return response
+
+
+def checkValidEnv(data):
+    if not OPENAI_API_KEY:
+        raise EnvironmentError()
+
+    output_name = data.get("output_name")
+    text_to_read = data.get("text_to_read")
+    voice_type = data.get("voice_type")
+
+    if any(val is None for val in [output_name, text_to_read, voice_type]):
+        raise KeyError("Include in request body output_name, text_to_read, voice_type")
