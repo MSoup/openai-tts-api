@@ -29,7 +29,7 @@ INPUT_SCHEMA = {
         "voice_type": {
             "type": "string",
             "title": "The type of voice for the audio to be read in",
-            "examples": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+            "enum": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
         },
     },
 }

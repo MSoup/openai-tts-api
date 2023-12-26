@@ -18,8 +18,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Initialize the resources once per Lambda execution environment by using global scope.
 _LAMBDA_S3_RESOURCE = {
     "resource": boto3.resource("s3"),
-    "bucket_name": "dave-dev-bucket",
-    # "bucket_name": os.getenv("S3_BUCKET_NAME"),
+    "bucket_name": os.getenv("S3_BUCKET_NAME"),
     "client": boto3.client("s3"),
 }
 
