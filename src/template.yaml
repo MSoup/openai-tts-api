@@ -22,7 +22,7 @@ Resources:
             Environment:
                 Variables:
                     S3_BUCKET_NAME: daven-dev-bucket
-                    OPENAI_API_KEY: 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
+                    OPENAI_API_KEY: __
             Events:
                 apigw:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
