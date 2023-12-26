@@ -5,13 +5,21 @@ import boto3
 from openai import OpenAI
 from botocore.exceptions import ClientError
 
+from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
+from aws_lambda_powertools.utilities.typing import LambdaContext
+from aws_lambda_powertools.utilities.validation import SchemaValidationError, validate
+
+import schemas
+
 
 # Environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Initialize the resources once per Lambda execution environment by using global scope.
 _LAMBDA_S3_RESOURCE = {
     "resource": boto3.resource("s3"),
-    "bucket_name": os.getenv("S3_BUCKET_NAME"),
+    "bucket_name": "dave-dev-bucket",
+    # "bucket_name": os.getenv("S3_BUCKET_NAME"),
     "client": boto3.client("s3"),
 }
 
@@ -40,19 +48,27 @@ class OpenAIClass:
         self.resource = openai_resource["resource"]
 
 
-def lambda_handler(event, context):
-    print(event)
+def lambda_handler(event: APIGatewayProxyEvent, context: LambdaContext):
+    # Deserialize json string
     data = json.loads(event.get("body"))
-    # Initialize class
+
+    # Initialize classes
     s3_class = LambdaS3Class(_LAMBDA_S3_RESOURCE)
     openai_class = OpenAIClass({"resource": OpenAI})
 
     try:
-        checkValidEnv(data)
+        # Validate event.data payload
+        # Check existing OPENAI_API_KEY
+        # Check S3 bucket existence
+        checkValidEnv(data, s3=s3_class)
     except ValueError as e:
         return generate_response(422, str(e))
-    except KeyError as e:
+    except SchemaValidationError as e:
         return generate_response(400, str(e))
+    except ClientError as e:
+        return generate_response(500, "Access forbidden or bucket does not exist.")
+    except EnvironmentError as e:
+        return generate_response(500, str(e))
 
     # three inputs should exist now
     output_name = data.get("output_name")
@@ -71,13 +87,14 @@ def lambda_handler(event, context):
     try:
         upload_to_s3(file=binary_audio, s3=s3_class, object_name=file_name)
     except ClientError as e:
+        print(e)
         return generate_response(500, "Unable to upload to S3, check permissions")
 
     s3_temp_url = get_signed_url(s3=s3_class, object_name=file_name)
 
-    return generate_response(
-        200, "Upload file succeeded", extras={"file_url": s3_temp_url}
-    )
+    data = {"file_url": s3_temp_url}
+
+    return generate_response(200, "Upload file succeeded", extras=data)
 
 
 def create_audio(API: OpenAIClass, text_to_read: str, voice_type: str = "alloy"):
@@ -154,7 +171,7 @@ def generate_response(statusCode: int, message: str, extras: dict = {}):
     response = {
         "isBase64Encoded": False,
         "statusCode": statusCode,
-        "headers": {},
+        "headers": {"content-type": "application/json"},
         "multiValueHeaders": {},
         "body": "",
     }
@@ -164,13 +181,20 @@ def generate_response(statusCode: int, message: str, extras: dict = {}):
     return response
 
 
-def checkValidEnv(data):
+def checkValidEnv(data, s3):
+    """
+    Validates lambda environment:
+    :param data: dict, event["data"] payload, deserialized
+    :param s3: LambdaS3Class
+    """
+    # Validate incoming payload
+    validate(event=data, schema=schemas.INPUT_SCHEMA)
+
+    # Validate env variables
     if not OPENAI_API_KEY:
-        raise EnvironmentError()
+        raise EnvironmentError("OPENAI_API_KEY not found")
+    if not _LAMBDA_S3_RESOURCE["bucket_name"]:
+        raise EnvironmentError("bucket_name env var not found")
 
-    output_name = data.get("output_name")
-    text_to_read = data.get("text_to_read")
-    voice_type = data.get("voice_type")
-
-    if any(val is None for val in [output_name, text_to_read, voice_type]):
-        raise KeyError("Include in request body output_name, text_to_read, voice_type")
+    # Validate existing S3 bucket
+    s3.client.head_bucket(Bucket=s3.bucket_name)
