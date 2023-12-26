@@ -91,9 +91,9 @@ def lambda_handler(event: APIGatewayProxyEvent, context: LambdaContext):
 
     s3_temp_url = get_signed_url(s3=s3_class, object_name=file_name)
 
-    data = {"file_url": s3_temp_url}
+    additional_data = {"file_url": s3_temp_url}
 
-    return generate_response(200, "Upload file succeeded", extras=data)
+    return generate_response(200, "Upload file succeeded", extras=additional_data)
 
 
 def create_audio(API: OpenAIClass, text_to_read: str, voice_type: str = "alloy"):
